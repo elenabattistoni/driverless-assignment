@@ -26,14 +26,14 @@ from visualization import (
 # Feel free to experiment with them, but note that your solution will also be
 # evaluated with different values (especially with different random seeds).
 # ---------------------------------------------------------------------------
-NUM_POINTS = 20
+NUM_POINTS = 44
 X_RANGE = 20.0
 Y_RANGE = 20.0
-MAP_SEED = 42
+MAP_SEED = 44444
 
-NOISE_STD = 0.25
-OBSERVATION_RATE = 0.8
-OBSERVATIONS_SEED = 7
+NOISE_STD = 0.8484
+OBSERVATION_RATE = 0.84
+OBSERVATIONS_SEED = 4444
 
 
 # ---------------------------------------------------------------------------
@@ -65,7 +65,16 @@ def associate(map_points: Map, observations: List[Point]) -> List[Tuple[int, int
         tuples, e.g. ``[(0, 12), (3, 5)]`` means that observation 12 was
         generated from map point 0, and observation 5 from map point 3.
     """
-    raise NotImplementedError("Step 3 (data association) is yours to implement")
+    result = []
+    dist = []
+    for i in range(len(observations)):
+        for j in range(len(map_points)):
+            dist.append((j, i, math.dist(map_points[j], observations[i])))
+    ord_dist = sorted(dist, key=lambda x: x[2])
+    for k in range(len(ord_dist)):
+        if ord_dist[k][0] not in [x[0] for x in result] and ord_dist[k][1] not in [x[1] for x in result]:
+            result.append((ord_dist[k][0], ord_dist[k][1]))
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -88,8 +97,13 @@ def correct_map(
         The corrected map: a list of ``(x, y)`` tuples with the same length
         and the same order as ``map_points``.
     """
-    raise NotImplementedError("Step 4 (map correction) is yours to implement")
 
+    #the correct map is a copy of the map points so that all the map points will have the same position as before
+    #if a map point doesn't have an associated observation, its cooordinates will simply remain unchanged
+    corr_map = map_points.copy()
+    for (i, j) in associations: 
+        corr_map[i] = ((map_points[i][0] + observations[j][0]) / 2, (map_points[i][1] + observations[j][1]) / 2)
+    return corr_map
 
 # ---------------------------------------------------------------------------
 # Step 5 -- Path finding (yours to implement)
@@ -112,10 +126,38 @@ def find_path(corrected_map: Map) -> List[int]:
       arrow (arrows that only touch at a shared node do not count as
       crossings). You can check it visually with ``visualize_path``.
     """
-    raise NotImplementedError("Step 5 (path finding) is yours to implement")
+    path_random = []
+    #arbitrary start: the point nearest to the origin (0, 0)
+    start = corrected_map.index(min(corrected_map, key=lambda p: math.dist(p, (0, 0))))
+    path_random.append(start)
 
+    #random path
+    for i in range(len(corrected_map)):
+            if i not in path_random:
+                path_random.append(i)
 
-# ---------------------------------------------------------------------------
+    path = []
+    #arbitrary start: the point nearest to the origin (0, 0)
+    start = corrected_map.index(min(corrected_map, key=lambda p: math.dist(p, (0, 0))))
+    path.append(start)
+
+    #path in which the next point is the nearest between the ones not already in the path
+    while len(path) < len(corrected_map):
+        point = path[-1]
+        dist = math.inf
+        for j in range(len(corrected_map)):
+            if j not in path:
+                if math.dist(corrected_map[point], corrected_map[j]) < dist:
+                    dist = math.dist(corrected_map[point], corrected_map[j])
+                    next_point = j
+        path.append(next_point)
+
+    path_length_random = path_length(corrected_map, path_random)
+    path_length_nearest = path_length(corrected_map, path)
+    print(path_length_random > path_length_nearest)
+    return path
+
+# ---------------------------------------------------------------------------   
 # Pipeline
 # ---------------------------------------------------------------------------
 
